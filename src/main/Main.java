@@ -28,7 +28,7 @@ public class Main implements ApplicationListener {
   private SpriteBatch batch;
   private int counter = 60;
   private final static int WORLD_BORDER = 16;
-  private final PositionBuffer buffer = new PositionBuffer(2048);
+  private final PositionBuffer buffer = new PositionBuffer(1024);
   private final Collection<Fly> flies = new ArrayList<>();
 
   @Override
@@ -36,6 +36,7 @@ public class Main implements ApplicationListener {
     renderer = new ShapeRenderer();
     batch = new SpriteBatch();
     font = new BitmapFont(Gdx.files.internal("data/hehe.fnt"));
+    font.setColor(.5f, .5f, .5f, 1f);
     camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     camera.position.add(WORLD_SIZE / 2, WORLD_SIZE / 2, 0);
     camera.update();
@@ -58,9 +59,9 @@ public class Main implements ApplicationListener {
     Gdx.graphics.getGL20().glClearColor(.25f, .25f, .25f, 1f);
     Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     renderer.setProjectionMatrix(camera.combined);
+    PartitionRenderer.render(partition, renderer, font, batch);
     renderPoints(renderer, flies, buffer);
     batch.setProjectionMatrix(camera.combined);
-    PartitionRenderer.render(partition, renderer, font, batch);
     if (counter++ >= 60) {
       PartitionUpdater.update(partition, flies, buffer);
       counter = 0;
