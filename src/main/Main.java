@@ -10,9 +10,10 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-import main.buffers.PositionBuffer;
+import main.points.Partition;
+import main.points.PartitionRenderer;
+import main.points.PositionBuffer;
 
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 

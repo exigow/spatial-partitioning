@@ -1,6 +1,6 @@
-package test.buffers;
+package test.points;
 
-import main.buffers.PositionBuffer;
+import main.points.PositionBuffer;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.*;

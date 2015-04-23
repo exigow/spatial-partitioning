@@ -1,4 +1,4 @@
-package main.buffers;
+package main.points;
 
 import java.util.Arrays;
 

@@ -1,4 +1,4 @@
-package main;
+package main.points;
 
 import java.util.ArrayList;
 import java.util.Collection;
