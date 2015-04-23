@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
 import java.nio.FloatBuffer;
@@ -21,36 +22,31 @@ public class Main implements ApplicationListener {
   private final Collection<Molecule> molecules = new ArrayList<>();
   private ShapeRenderer renderer;
   private OrthographicCamera camera;
-  private BitmapFont font;
-  private SpriteBatch batch;
+  //private BitmapFont font;
+  //private SpriteBatch batch;
   private int counter = 60;
 
   @Override
   public void create() {
     renderer = new ShapeRenderer();
-    batch = new SpriteBatch();
-    font = new BitmapFont();
+    //batch = new SpriteBatch();
+    //font = new BitmapFont();
     camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     camera.position.add(WORLD_SIZE / 2, WORLD_SIZE / 2, 0);
     camera.update();
-    for (int i = 0; i < 512; i++)
+    for (int i = 0; i < 1024; i++)
       molecules.add(new Molecule(WORLD_SIZE));
   }
 
   @Override
   public void render() {
+    updatePoints(partition, molecules);
     Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
     Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     renderer.setProjectionMatrix(camera.combined);
-    batch.setProjectionMatrix(camera.combined);
-    renderer.begin(ShapeRenderer.ShapeType.Filled);
-    renderer.setColor(Color.WHITE);
-    for (Molecule mole : molecules) {
-      renderer.circle(mole.position.x, mole.position.y, 2f);
-      update(mole);
-    }
-    renderer.end();
-    PartitionRenderer.render(partition, renderer, font, batch);
+    renderPoints(renderer, molecules);
+    //batch.setProjectionMatrix(camera.combined);
+    //PartitionRenderer.render(partition, renderer, font, batch);
     if (counter++ >= 60) {
       partition.clear();
       molecules.forEach(partition::put);
@@ -58,7 +54,20 @@ public class Main implements ApplicationListener {
     }
   }
 
-  private void update(Molecule mole) {
+  private static void renderPoints(ShapeRenderer renderer, Collection<Molecule> molecules) {
+    renderer.begin(ShapeRenderer.ShapeType.Point);
+    renderer.setColor(Color.WHITE);
+    for (Molecule mole : molecules)
+      renderer.point(mole.position.x, mole.position.y, 0);
+    renderer.end();
+  }
+
+  private static void updatePoints(Partition partition, Collection<Molecule> molecules) {
+    for (Molecule mole : molecules)
+      update(partition, mole);
+  }
+
+  private static void update(Partition partition, Molecule mole) {
     float size = WORLD_SIZE - 16;
     if (mole.position.x > size) {
       mole.move.x *= -1;
@@ -93,7 +102,7 @@ public class Main implements ApplicationListener {
       float dist = (float) Math.pow(1f - Math.min(64, Vector2.dst(mole.position.x, mole.position.y, other.position.x, other.position.y)) / 64, 2f) * .00125f;
       float dy = other.position.y - mole.position.y;
       float dx = other.position.x - mole.position.x;
-      float angle = (float) Math.atan2(dy, dx);
+      float angle = MathUtils.atan2(dy, dx);
       float x = (float) Math.cos(angle) * dist;
       float y = (float) Math.sin(angle) * dist;
       mole.move.add(x, y);
