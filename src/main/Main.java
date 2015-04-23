@@ -12,6 +12,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import main.points.Partition;
 import main.points.PartitionRenderer;
+import main.points.PartitionUpdater;
 import main.points.PositionBuffer;
 
 import java.util.ArrayList;
@@ -20,26 +21,27 @@ import java.util.Collection;
 public class Main implements ApplicationListener {
 
   private static final float WORLD_SIZE = 512;
-  private final Partition partition = new Partition(8, WORLD_SIZE);
+  private final Partition partition = new Partition(16, WORLD_SIZE);
   private ShapeRenderer renderer;
   private OrthographicCamera camera;
   private BitmapFont font;
   private SpriteBatch batch;
   private int counter = 60;
-  private final PositionBuffer buffer = new PositionBuffer(1024);
+  private final static int WORLD_BORDER = 16;
+  private final PositionBuffer buffer = new PositionBuffer(2048);
   private final Collection<Fly> flies = new ArrayList<>();
 
   @Override
   public void create() {
     renderer = new ShapeRenderer();
     batch = new SpriteBatch();
-    font = new BitmapFont();
+    font = new BitmapFont(Gdx.files.internal("data/hehe.fnt"));
     camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     camera.position.add(WORLD_SIZE / 2, WORLD_SIZE / 2, 0);
     camera.update();
     for (int i = 0; i < buffer.allocationsArray().length; i++) {
-      float x = rnd() * WORLD_SIZE;
-      float y = rnd() * WORLD_SIZE;
+      float x = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
+      float y = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
       int pointer = buffer.allocate(x, y);
       Fly fly = new Fly(pointer);
       flies.add(fly);
@@ -53,25 +55,15 @@ public class Main implements ApplicationListener {
   @Override
   public void render() {
     updatePoints(partition, flies, buffer);
-    Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
+    Gdx.graphics.getGL20().glClearColor(.25f, .25f, .25f, 1f);
     Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     renderer.setProjectionMatrix(camera.combined);
     renderPoints(renderer, flies, buffer);
     batch.setProjectionMatrix(camera.combined);
     PartitionRenderer.render(partition, renderer, font, batch);
     if (counter++ >= 60) {
-      updatePartition(partition, flies, buffer);
+      PartitionUpdater.update(partition, flies, buffer);
       counter = 0;
-    }
-  }
-
-  private static void updatePartition(Partition partition, Collection<Fly> flies, PositionBuffer buffer) {
-    partition.clear();
-    for (Fly fly : flies) {
-      int pivot = fly.positionPivot;
-      float x = buffer.getX(pivot);
-      float y = buffer.getY(pivot);
-      partition.put(pivot, x, y);
     }
   }
 
@@ -93,35 +85,31 @@ public class Main implements ApplicationListener {
 
   private static void update(Partition partition, Fly fly, PositionBuffer buffer) {
     int pivot = fly.positionPivot;
+    performCage(pivot, buffer);
     float x = buffer.getX(pivot);
     float y = buffer.getY(pivot);
-    performCage(pivot, x, y, fly, buffer);
     int cellX = partition.positionFor(x);
     int cellY = partition.positionFor(y);
-    for (int ix = -1; ix <= 1; ix++)
-      for (int iy = -1; iy <= 1; iy++)
+    int dist = 2;
+    for (int ix = -dist; ix <= dist; ix++)
+      for (int iy = -dist; iy <= dist; iy++)
         computeFor(fly, partition.get(cellX + ix, cellY + iy), buffer);
     buffer.updatePosition(pivot, x + fly.move.x, y + fly.move.y);
   }
 
-  private static void performCage(int pivot, float x, float y, Fly fly, PositionBuffer buffer) {
-    float max = WORLD_SIZE - 16;
-    if (x > max) {
-      fly.move.x *= -1;
+  private static void performCage(int pivot, PositionBuffer buffer) {
+    float x = buffer.getX(pivot);
+    float y = buffer.getY(pivot);
+    float max = WORLD_SIZE - WORLD_BORDER;
+    float min = WORLD_BORDER;
+    if (x > max)
+      buffer.updateX(pivot, min);
+    if (x < min)
       buffer.updateX(pivot, max);
-    }
-    if (x < 0) {
-      fly.move.x *= -1;
-      buffer.updateX(pivot, 0);
-    }
-    if (y > max) {
-      fly.move.y *= -1;
+    if (y > max)
+      buffer.updateY(pivot, min);
+    if (y < min)
       buffer.updateY(pivot, max);
-    }
-    if (y < 0) {
-      fly.move.y *= -1;
-      buffer.updateY(pivot, 0);
-    }
   }
 
   private static void computeFor(Fly fly, Collection<Integer> othersPivots, PositionBuffer buffer) {

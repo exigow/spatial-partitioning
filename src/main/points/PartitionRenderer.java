@@ -32,8 +32,8 @@ public class PartitionRenderer {
     batch.begin();
     for (int ix = 0; ix < partition.cellCount; ix++) {
       for (int iy = 0; iy < partition.cellCount; iy++) {
-        float x = ix * cellSize + 4;
-        float y = (iy + 1) * cellSize - 4;
+        float x = ix * cellSize + 1;
+        float y = (iy + 1) * cellSize - 1;
         int size = partition.get(ix, iy).size();
         if (size != 0)
           font.draw(batch, "" + size, x, y);
