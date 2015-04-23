@@ -35,15 +35,13 @@ public class PositionBuffer {
 
   public int allocate(float x, float y) {
     int pivot = findFree();
-    buffer[pivot * 2] = x;
-    buffer[pivot * 2 + 1] = y;
+    updatePosition(pivot, x, y);
     allocated[pivot] = true;
     return pivot;
   }
 
   public void deallocate(int pivot) {
-    buffer[pivot * 2] = 0;
-    buffer[pivot * 2 + 1] = 0;
+    updatePosition(pivot, 0, 0);
     allocated[pivot] = false;
   }
 
