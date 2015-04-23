@@ -37,7 +37,7 @@ public class Main implements ApplicationListener {
     renderer = new ShapeRenderer();
     batch = new SpriteBatch();
     font = new BitmapFont(Gdx.files.internal("data/hehe.fnt"));
-    font.setColor(.5f, .5f, .5f, 1f);
+    font.setColor(Color.GRAY);
     camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     camera.position.add(WORLD_SIZE / 2, WORLD_SIZE / 2, 0);
     camera.update();
