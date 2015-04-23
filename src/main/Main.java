@@ -26,7 +26,8 @@ public class Main implements ApplicationListener {
   private OrthographicCamera camera;
   private BitmapFont font;
   private SpriteBatch batch;
-  private int counter = 60;
+  private final static int COUNTER_MAX = 60;
+  private int counter = COUNTER_MAX;
   private final static int WORLD_BORDER = 16;
   private final PositionBuffer buffer = new PositionBuffer(1024);
   private final Collection<Fly> flies = new ArrayList<>();
@@ -62,7 +63,7 @@ public class Main implements ApplicationListener {
     PartitionRenderer.render(partition, renderer, font, batch);
     renderPoints(renderer, flies, buffer);
     batch.setProjectionMatrix(camera.combined);
-    if (counter++ >= 60) {
+    if (counter++ >= COUNTER_MAX) {
       PartitionUpdater.update(partition, flies, buffer);
       counter = 0;
     }
