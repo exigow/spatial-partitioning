@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import main.buffers.PositionBuffer;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -19,93 +20,127 @@ public class Main implements ApplicationListener {
 
   private static final float WORLD_SIZE = 512;
   private final Partition partition = new Partition(8, WORLD_SIZE);
-  private final Collection<Molecule> molecules = new ArrayList<>();
   private ShapeRenderer renderer;
   private OrthographicCamera camera;
-  //private BitmapFont font;
-  //private SpriteBatch batch;
+  private BitmapFont font;
+  private SpriteBatch batch;
   private int counter = 60;
+  private final PositionBuffer buffer = new PositionBuffer(1024);
+  private final Collection<Fly> flies = new ArrayList<>();
 
   @Override
   public void create() {
     renderer = new ShapeRenderer();
-    //batch = new SpriteBatch();
-    //font = new BitmapFont();
+    batch = new SpriteBatch();
+    font = new BitmapFont();
     camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     camera.position.add(WORLD_SIZE / 2, WORLD_SIZE / 2, 0);
     camera.update();
-    for (int i = 0; i < 1024; i++)
-      molecules.add(new Molecule(WORLD_SIZE));
+    for (int i = 0; i < buffer.allocationsArray().length; i++) {
+      float x = rnd() * WORLD_SIZE;
+      float y = rnd() * WORLD_SIZE;
+      int pointer = buffer.allocate(x, y);
+      Fly fly = new Fly(pointer);
+      flies.add(fly);
+    }
+  }
+
+  private static float rnd() {
+    return (float) Math.random();
   }
 
   @Override
   public void render() {
-    updatePoints(partition, molecules);
+    updatePoints(partition, flies, buffer);
     Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
     Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     renderer.setProjectionMatrix(camera.combined);
-    renderPoints(renderer, molecules);
-    //batch.setProjectionMatrix(camera.combined);
-    //PartitionRenderer.render(partition, renderer, font, batch);
+    renderPoints(renderer, flies, buffer);
+    batch.setProjectionMatrix(camera.combined);
+    PartitionRenderer.render(partition, renderer, font, batch);
     if (counter++ >= 60) {
-      partition.clear();
-      molecules.forEach(partition::put);
+      updatePartition(partition, flies, buffer);
       counter = 0;
     }
   }
 
-  private static void renderPoints(ShapeRenderer renderer, Collection<Molecule> molecules) {
+  private static void updatePartition(Partition partition, Collection<Fly> flies, PositionBuffer buffer) {
+    partition.clear();
+    for (Fly fly : flies) {
+      int pivot = fly.positionPivot;
+      float x = buffer.getX(pivot);
+      float y = buffer.getY(pivot);
+      partition.put(pivot, x, y);
+    }
+  }
+
+  private static void renderPoints(ShapeRenderer renderer, Collection<Fly> flies, PositionBuffer buffer) {
     renderer.begin(ShapeRenderer.ShapeType.Point);
     renderer.setColor(Color.WHITE);
-    for (Molecule mole : molecules)
-      renderer.point(mole.position.x, mole.position.y, 0);
+    for (Fly fly : flies) {
+      float x = buffer.getX(fly.positionPivot);
+      float y = buffer.getY(fly.positionPivot);
+      renderer.point(x, y, 0);
+    }
     renderer.end();
   }
 
-  private static void updatePoints(Partition partition, Collection<Molecule> molecules) {
-    for (Molecule mole : molecules)
-      update(partition, mole);
+  private static void updatePoints(Partition partition, Collection<Fly> files, PositionBuffer buffer) {
+    for (Fly fly : files)
+      update(partition, fly, buffer);
   }
 
-  private static void update(Partition partition, Molecule mole) {
-    float size = WORLD_SIZE - 16;
-    if (mole.position.x > size) {
-      mole.move.x *= -1;
-      mole.position.x = size;
-    }
-    if (mole.position.x < 0) {
-      mole.move.x *= -1;
-      mole.position.x = 0;
-    }
-    if (mole.position.y > size) {
-      mole.move.y *= -1;
-      mole.position.y = size;
-    }
-    if (mole.position.y < 0) {
-      mole.move.y *= -1;
-      mole.position.y = 0;
-    }
-    int x = partition.positionFor(mole.position.x);
-    int y = partition.positionFor(mole.position.y);
+  private static void update(Partition partition, Fly fly, PositionBuffer buffer) {
+    int pivot = fly.positionPivot;
+    float x = buffer.getX(pivot);
+    float y = buffer.getY(pivot);
+    performCage(pivot, x, y, fly, buffer);
+    int cellX = partition.positionFor(x);
+    int cellY = partition.positionFor(y);
     for (int ix = -1; ix <= 1; ix++)
       for (int iy = -1; iy <= 1; iy++)
-        computeFor(mole, partition.get(x + ix, y + iy));
-    mole.position.add(mole.move);
+        computeFor(fly, partition.get(cellX + ix, cellY + iy), buffer);
+    buffer.updatePosition(pivot, x + fly.move.x, y + fly.move.y);
   }
 
-  private static void computeFor(Molecule mole, Collection<Molecule> others) {
-    if (others == null)
+  private static void performCage(int pivot, float x, float y, Fly fly, PositionBuffer buffer) {
+    float max = WORLD_SIZE - 16;
+    if (x > max) {
+      fly.move.x *= -1;
+      buffer.updateX(pivot, max);
+    }
+    if (x < 0) {
+      fly.move.x *= -1;
+      buffer.updateX(pivot, 0);
+    }
+    if (y > max) {
+      fly.move.y *= -1;
+      buffer.updateY(pivot, max);
+    }
+    if (y < 0) {
+      fly.move.y *= -1;
+      buffer.updateY(pivot, 0);
+    }
+  }
+
+  private static void computeFor(Fly fly, Collection<Integer> othersPivots, PositionBuffer buffer) {
+    if (othersPivots == null)
       return;
-    for (Molecule other : others) {
-      if (mole == other)
+    for (Integer otherPivot : othersPivots) {
+      int pivot = fly.positionPivot;
+      if (otherPivot == pivot)
         continue;
-      float dist = (float) Math.pow(1f - Math.min(64, Vector2.dst(mole.position.x, mole.position.y, other.position.x, other.position.y)) / 64, 2f) * .00125f;
-      float dy = other.position.y - mole.position.y;
-      float dx = other.position.x - mole.position.x;
+      float x = buffer.getX(pivot);
+      float y = buffer.getY(pivot);
+      float otherX = buffer.getX(otherPivot);
+      float otherY = buffer.getY(otherPivot);
+      float dist = (float) Math.pow(1f - Math.min(64, Vector2.dst(x, y, otherX, otherY)) / 64, 2f) * .00125f;
+      float dy = otherY - y;
+      float dx = otherX - x;
       float angle = MathUtils.atan2(dy, dx);
-      float x = (float) Math.cos(angle) * dist;
-      float y = (float) Math.sin(angle) * dist;
-      mole.move.add(x, y);
+      float vx = MathUtils.cos(angle) * dist;
+      float vy = MathUtils.sin(angle) * dist;
+      fly.move.add(vx, vy);
     }
   }
 

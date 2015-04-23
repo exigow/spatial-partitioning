@@ -10,10 +10,10 @@ public class PositionBuffer {
 
   public PositionBuffer(float[] variables) {
     int length = variables.length;
-    if (length % 2 != 0)
+    if (!isEven(length))
       throw new RuntimeException();
     count = length / 2;
-    buffer = initialise(count);
+    buffer = initialize(count);
     System.arraycopy(variables, 0, buffer, 0, length);
     allocated = new boolean[count];
     Arrays.fill(allocated, true);
@@ -21,11 +21,15 @@ public class PositionBuffer {
 
   public PositionBuffer(int count) {
     this.count = count;
-    buffer = initialise(count);
+    buffer = initialize(count);
     allocated = new boolean[count];
   }
 
-  private static float[] initialise(int count) {
+  private static boolean isEven(int val) {
+    return val % 2 == 0;
+  }
+
+  private static float[] initialize(int count) {
     return new float[count * 2];
   }
 
@@ -43,6 +47,19 @@ public class PositionBuffer {
     allocated[pivot] = false;
   }
 
+  public void updatePosition(int pivot, float x, float y) {
+    updateX(pivot, x);
+    updateY(pivot, y);
+  }
+
+  public void updateX(int pivot, float x) {
+    buffer[pivot * 2] = x;
+  }
+
+  public void updateY(int pivot, float y) {
+    buffer[pivot * 2 + 1] = y;
+  }
+
   public int findFree() {
     for (int i = 0; i < allocated.length; i++)
       if (!allocated[i])
@@ -51,11 +68,11 @@ public class PositionBuffer {
   }
 
   public float getX(int pivot) {
-    return buffer[pivot];
+    return buffer[pivot * 2];
   }
 
   public float getY(int pivot) {
-    return buffer[pivot] + 1;
+    return buffer[pivot * 2 + 1];
   }
 
   public float[] positionsArray() {
