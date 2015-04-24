@@ -20,31 +20,29 @@ public class Main implements ApplicationListener {
 
   private final static float GRAVITATIONAL_CONST = 6.67384e-11f;
   private final static float WORLD_SIZE = 512;
-  private final Partition partition = new Partition(16, WORLD_SIZE);
+  private final Partition partition = new Partition(8, WORLD_SIZE);
   private ShapeRenderer renderer;
   private OrthographicCamera camera;
-  //private BitmapFont font;
-  //private SpriteBatch batch;
+  private BitmapFont font;
+  private SpriteBatch batch;
   private final static int COUNTER_MAX = 15;
   private int counter = COUNTER_MAX;
   private final static int WORLD_BORDER = 16;
-  private final PositionBuffer buffer = new PositionBuffer(2048);
+  private final PositionBuffer buffer = new PositionBuffer(1024);
   private final Collection<Fly> flies = new ArrayList<>();
 
   @Override
   public void create() {
     renderer = new ShapeRenderer();
-    //batch = new SpriteBatch();
-    //font = new BitmapFont(Gdx.files.internal("data/hehe.fnt"));
-    //font.setColor(Color.DARK_GRAY);
+    batch = new SpriteBatch();
+    font = new BitmapFont(Gdx.files.internal("data/hehe.fnt"));
+    font.setColor(Color.DARK_GRAY);
     camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     camera.position.add(WORLD_SIZE / 2, WORLD_SIZE / 2, 0);
     camera.update();
     for (int i = 0; i < buffer.allocationsArray().length; i++) {
-      //float x = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
-      //float y = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
-      float x = WORLD_SIZE / 2 + (-1 + rnd() * 2) * 4f;
-      float y = WORLD_SIZE / 2 + (-1 + rnd() * 2) * 4f;
+      float x = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
+      float y = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
       int pointer = buffer.allocate(x, y);
       Fly fly = new Fly(pointer);
       flies.add(fly);
@@ -58,27 +56,16 @@ public class Main implements ApplicationListener {
   @Override
   public void render() {
     updatePoints(partition, flies, buffer);
-    Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
-    Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
-    renderer.setProjectionMatrix(camera.combined);
-    //batch.setProjectionMatrix(camera.combined);
-    //PartitionRenderer.render(partition, renderer, font, batch);
-    renderPoints(renderer, flies, buffer);
     if (counter++ >= COUNTER_MAX) {
       PartitionUpdater.update(partition, flies, buffer);
       counter = 0;
     }
-  }
-
-  private static void renderPoints(ShapeRenderer renderer, Collection<Fly> flies, PositionBuffer buffer) {
-    renderer.begin(ShapeRenderer.ShapeType.Point);
-    renderer.setColor(Color.WHITE);
-    for (Fly fly : flies) {
-      float x = buffer.getX(fly.positionPivot);
-      float y = buffer.getY(fly.positionPivot);
-      renderer.point(x, y, 0);
-    }
-    renderer.end();
+    Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
+    Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+    renderer.setProjectionMatrix(camera.combined);
+    batch.setProjectionMatrix(camera.combined);
+    PartitionRenderer.render(partition, renderer, font, batch);
+    PointsRenderer.render(renderer, buffer);
   }
 
   private static void updatePoints(Partition partition, Collection<Fly> files, PositionBuffer buffer) {
