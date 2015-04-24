@@ -15,10 +15,11 @@ import main.points.PositionBuffer;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Main implements ApplicationListener {
 
-  private final static float GRAVITATIONAL_CONST = 6.67384e-11f;
   private final static float WORLD_SIZE = 512;
   private final Partition<Fly> partition = new Partition<>(8, WORLD_SIZE);
   private ShapeRenderer renderer;
@@ -30,6 +31,7 @@ public class Main implements ApplicationListener {
   private final static int WORLD_BORDER = 16;
   private final PositionBuffer buffer = new PositionBuffer(1024);
   private final Collection<Fly> flies = new ArrayList<>();
+  private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
   @Override
   public void create() {
@@ -59,71 +61,16 @@ public class Main implements ApplicationListener {
       PartitionUpdater.update(partition, flies, buffer);
       counter = 0;
     }
-    updateCell(partition, buffer, 1, 1);
+    executor.execute(new ParallelSimulation(partition, buffer, 0, 0, 4, 4));
+    executor.execute(new ParallelSimulation(partition, buffer, 4, 0, 8, 4));
+    executor.execute(new ParallelSimulation(partition, buffer, 4, 4, 8, 8));
+    executor.execute(new ParallelSimulation(partition, buffer, 0, 4, 4, 8));
     Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
     Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     renderer.setProjectionMatrix(camera.combined);
     batch.setProjectionMatrix(camera.combined);
     PartitionRenderer.render(partition, renderer, font, batch);
     PointsRenderer.render(renderer, buffer);
-  }
-
-  private static void updateCell(Partition<Fly> partition, PositionBuffer buffer, int x, int y) {
-    Collection<Fly> files = partition.get(x, y);
-    for (Fly fly : files)
-      update(partition, fly, buffer);
-  }
-
-  private static void update(Partition<Fly> partition, Fly fly, PositionBuffer buffer) {
-    int pivot = fly.positionPivot;
-    performCage(pivot, buffer);
-    float x = buffer.getX(pivot);
-    float y = buffer.getY(pivot);
-    int cellX = partition.positionFor(x);
-    int cellY = partition.positionFor(y);
-    int dist = 1;
-    for (int ix = -dist; ix <= dist; ix++)
-      for (int iy = -dist; iy <= dist; iy++)
-        computeFor(fly, partition.get(cellX + ix, cellY + iy), buffer);
-    buffer.updatePosition(pivot, x + fly.move.x, y + fly.move.y);
-  }
-
-  private static void performCage(int pivot, PositionBuffer buffer) {
-    float x = buffer.getX(pivot);
-    float y = buffer.getY(pivot);
-    float max = WORLD_SIZE - WORLD_BORDER;
-    float min = WORLD_BORDER;
-    if (x > max)
-      buffer.updateX(pivot, min);
-    if (x < min)
-      buffer.updateX(pivot, max);
-    if (y > max)
-      buffer.updateY(pivot, min);
-    if (y < min)
-      buffer.updateY(pivot, max);
-  }
-
-  private static void computeFor(Fly fly, Collection<Fly> othersFlies, PositionBuffer buffer) {
-    if (othersFlies == null)
-      return;
-    for (Fly otherFly : othersFlies) {
-      int pivot = fly.positionPivot;
-      int otherPivot = otherFly.positionPivot;
-      if (otherPivot == pivot)
-        continue;
-      float x = buffer.getX(pivot);
-      float y = buffer.getY(pivot);
-      float otherX = buffer.getX(otherPivot);
-      float otherY = buffer.getY(otherPivot);
-      float dy = otherY - y;
-      float dx = otherX - x;
-      float distanceSquared = (float) Math.sqrt(dx * dx + dy * dy);
-      float force =  GRAVITATIONAL_CONST / distanceSquared * 100000000f;
-      float vx = dx / distanceSquared * force;
-      float vy = dy / distanceSquared * force;
-      fly.move.add(vx, vy);
-    }
-    fly.move.scl(.9975f);
   }
 
   @Override
