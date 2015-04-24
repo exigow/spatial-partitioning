@@ -2,6 +2,7 @@ package main.points;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class Partition<T> {
 
@@ -17,10 +18,10 @@ public class Partition<T> {
 
   @SuppressWarnings("unchecked")
   private Collection<T>[][] initializeTable(int capacity) {
-    Collection<T>[][] table = new ArrayList[capacity][capacity];
+    Collection<T>[][] table = new ConcurrentLinkedDeque[capacity][capacity];
     for (int ix = 0; ix < capacity; ix++)
       for (int iy = 0; iy < capacity; iy++)
-        table[ix][iy] = new ArrayList<>();
+        table[ix][iy] = new ConcurrentLinkedDeque<>();
     return table;
   }
 

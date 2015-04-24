@@ -29,7 +29,7 @@ public class Main implements ApplicationListener {
   private final static int COUNTER_MAX = 15;
   private int counter = COUNTER_MAX;
   private final static int WORLD_BORDER = 16;
-  private final PositionBuffer buffer = new PositionBuffer(1024);
+  private final PositionBuffer buffer = new PositionBuffer(2048);
   private final Collection<Fly> flies = new ArrayList<>();
   private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
@@ -38,7 +38,6 @@ public class Main implements ApplicationListener {
     renderer = new ShapeRenderer();
     batch = new SpriteBatch();
     font = new BitmapFont(Gdx.files.internal("data/hehe.fnt"));
-    font.setColor(Color.DARK_GRAY);
     camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     camera.position.add(WORLD_SIZE / 2, WORLD_SIZE / 2, 0);
     camera.update();
@@ -71,6 +70,14 @@ public class Main implements ApplicationListener {
     batch.setProjectionMatrix(camera.combined);
     PartitionRenderer.render(partition, renderer, font, batch);
     PointsRenderer.render(renderer, buffer);
+    renderFps(batch, font);
+  }
+
+  private static void renderFps(SpriteBatch batch, BitmapFont font) {
+    int fps = Gdx.graphics.getFramesPerSecond();
+    batch.begin();
+    font.draw(batch, "FPS = " + fps, 0, 512 + 32);
+    batch.end();
   }
 
   @Override
