@@ -20,7 +20,7 @@ public class Main implements ApplicationListener {
 
   private final static float GRAVITATIONAL_CONST = 6.67384e-11f;
   private final static float WORLD_SIZE = 512;
-  private final Partition partition = new Partition(8, WORLD_SIZE);
+  private final Partition<Fly> partition = new Partition<>(8, WORLD_SIZE);
   private ShapeRenderer renderer;
   private OrthographicCamera camera;
   private BitmapFont font;
@@ -68,13 +68,13 @@ public class Main implements ApplicationListener {
     PointsRenderer.render(renderer, buffer);
   }
 
-  private static void updateCell(Partition partition, PositionBuffer buffer, int x, int y) {
+  private static void updateCell(Partition<Fly> partition, PositionBuffer buffer, int x, int y) {
     Collection<Fly> files = partition.get(x, y);
     for (Fly fly : files)
       update(partition, fly, buffer);
   }
 
-  private static void update(Partition partition, Fly fly, PositionBuffer buffer) {
+  private static void update(Partition<Fly> partition, Fly fly, PositionBuffer buffer) {
     int pivot = fly.positionPivot;
     performCage(pivot, buffer);
     float x = buffer.getX(pivot);

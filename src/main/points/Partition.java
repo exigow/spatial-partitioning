@@ -1,38 +1,36 @@
 package main.points;
 
-import main.Fly;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class Partition {
+public class Partition<T> {
 
   public final int cellCount;
   public final float worldSize;
-  private final Collection<Fly>[][] table;
+  private final Collection<T>[][] table;
 
   public Partition(int cellCount, float worldSize) {
     this.cellCount = cellCount;
     this.worldSize = worldSize;
-    table = initializeFlyable(cellCount);
+    table = initializeTable(cellCount);
   }
 
   @SuppressWarnings("unchecked")
-  private static Collection<Fly>[][] initializeFlyable(int capacity) {
-    Collection<Fly>[][] table = new ArrayList[capacity][capacity];
+  private Collection<T>[][] initializeTable(int capacity) {
+    Collection<T>[][] table = new ArrayList[capacity][capacity];
     for (int ix = 0; ix < capacity; ix++)
       for (int iy = 0; iy < capacity; iy++)
         table[ix][iy] = new ArrayList<>();
     return table;
   }
 
-  public void put(Fly pivot, float x, float y) {
+  public void put(T ref, float x, float y) {
     int cellX = positionFor(x);
     int cellY = positionFor(y);
-    table[cellX][cellY].add(pivot);
+    table[cellX][cellY].add(ref);
   }
 
-  public Collection<Fly> get(int x, int y) {
+  public Collection<T> get(int x, int y) {
     if (x < 0 || y < 0 || x >= cellCount || y >= cellCount)
       return null;
     return table[x][y];
