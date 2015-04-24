@@ -15,7 +15,7 @@ public class PartitionRenderer {
   }
 
   private static void renderGridLines(Partition partition, ShapeRenderer renderer, float cellSize) {
-    renderer.setColor(Color.GRAY);
+    renderer.setColor(Color.DARK_GRAY);
     renderer.begin(ShapeRenderer.ShapeType.Line);
     for (int ix = 0; ix <= partition.cellCount; ix++) {
       float x = ix * cellSize;

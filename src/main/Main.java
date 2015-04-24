@@ -8,8 +8,6 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
 import main.points.Partition;
 import main.points.PartitionRenderer;
 import main.points.PartitionUpdater;
@@ -20,30 +18,33 @@ import java.util.Collection;
 
 public class Main implements ApplicationListener {
 
-  private static final float WORLD_SIZE = 512;
+  private final static float GRAVITATIONAL_CONST = 6.67384e-11f;
+  private final static float WORLD_SIZE = 512;
   private final Partition partition = new Partition(16, WORLD_SIZE);
   private ShapeRenderer renderer;
   private OrthographicCamera camera;
-  private BitmapFont font;
-  private SpriteBatch batch;
-  private final static int COUNTER_MAX = 60;
+  //private BitmapFont font;
+  //private SpriteBatch batch;
+  private final static int COUNTER_MAX = 15;
   private int counter = COUNTER_MAX;
   private final static int WORLD_BORDER = 16;
-  private final PositionBuffer buffer = new PositionBuffer(1024);
+  private final PositionBuffer buffer = new PositionBuffer(2048);
   private final Collection<Fly> flies = new ArrayList<>();
 
   @Override
   public void create() {
     renderer = new ShapeRenderer();
-    batch = new SpriteBatch();
-    font = new BitmapFont(Gdx.files.internal("data/hehe.fnt"));
-    font.setColor(Color.GRAY);
+    //batch = new SpriteBatch();
+    //font = new BitmapFont(Gdx.files.internal("data/hehe.fnt"));
+    //font.setColor(Color.DARK_GRAY);
     camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     camera.position.add(WORLD_SIZE / 2, WORLD_SIZE / 2, 0);
     camera.update();
     for (int i = 0; i < buffer.allocationsArray().length; i++) {
-      float x = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
-      float y = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
+      //float x = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
+      //float y = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
+      float x = WORLD_SIZE / 2 + (-1 + rnd() * 2) * 4f;
+      float y = WORLD_SIZE / 2 + (-1 + rnd() * 2) * 4f;
       int pointer = buffer.allocate(x, y);
       Fly fly = new Fly(pointer);
       flies.add(fly);
@@ -57,12 +58,12 @@ public class Main implements ApplicationListener {
   @Override
   public void render() {
     updatePoints(partition, flies, buffer);
-    Gdx.graphics.getGL20().glClearColor(.25f, .25f, .25f, 1f);
+    Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
     Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     renderer.setProjectionMatrix(camera.combined);
-    PartitionRenderer.render(partition, renderer, font, batch);
+    //batch.setProjectionMatrix(camera.combined);
+    //PartitionRenderer.render(partition, renderer, font, batch);
     renderPoints(renderer, flies, buffer);
-    batch.setProjectionMatrix(camera.combined);
     if (counter++ >= COUNTER_MAX) {
       PartitionUpdater.update(partition, flies, buffer);
       counter = 0;
@@ -92,7 +93,7 @@ public class Main implements ApplicationListener {
     float y = buffer.getY(pivot);
     int cellX = partition.positionFor(x);
     int cellY = partition.positionFor(y);
-    int dist = 2;
+    int dist = 1;
     for (int ix = -dist; ix <= dist; ix++)
       for (int iy = -dist; iy <= dist; iy++)
         computeFor(fly, partition.get(cellX + ix, cellY + iy), buffer);
@@ -125,14 +126,15 @@ public class Main implements ApplicationListener {
       float y = buffer.getY(pivot);
       float otherX = buffer.getX(otherPivot);
       float otherY = buffer.getY(otherPivot);
-      float dist = (float) Math.pow(1f - Math.min(64, Vector2.dst(x, y, otherX, otherY)) / 64, 2f) * .00125f;
       float dy = otherY - y;
       float dx = otherX - x;
-      float angle = MathUtils.atan2(dy, dx);
-      float vx = MathUtils.cos(angle) * dist;
-      float vy = MathUtils.sin(angle) * dist;
+      float distanceSquared = (float) Math.sqrt(dx * dx + dy * dy);
+      float force =  GRAVITATIONAL_CONST / distanceSquared * 100000000f;
+      float vx = dx / distanceSquared * force;
+      float vy = dy / distanceSquared * force;
       fly.move.add(vx, vy);
     }
+    fly.move.scl(.9875f);
   }
 
   @Override
