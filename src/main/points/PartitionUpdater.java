@@ -12,7 +12,7 @@ public class PartitionUpdater {
       int pivot = fly.positionPivot;
       float x = buffer.getX(pivot);
       float y = buffer.getY(pivot);
-      partition.put(pivot, x, y);
+      partition.put(fly, x, y);
     }
   }
 

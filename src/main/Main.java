@@ -55,11 +55,11 @@ public class Main implements ApplicationListener {
 
   @Override
   public void render() {
-    updatePoints(partition, flies, buffer);
     if (counter++ >= COUNTER_MAX) {
       PartitionUpdater.update(partition, flies, buffer);
       counter = 0;
     }
+    updateCell(partition, buffer, 1, 1);
     Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
     Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     renderer.setProjectionMatrix(camera.combined);
@@ -68,7 +68,8 @@ public class Main implements ApplicationListener {
     PointsRenderer.render(renderer, buffer);
   }
 
-  private static void updatePoints(Partition partition, Collection<Fly> files, PositionBuffer buffer) {
+  private static void updateCell(Partition partition, PositionBuffer buffer, int x, int y) {
+    Collection<Fly> files = partition.get(x, y);
     for (Fly fly : files)
       update(partition, fly, buffer);
   }
@@ -102,11 +103,12 @@ public class Main implements ApplicationListener {
       buffer.updateY(pivot, max);
   }
 
-  private static void computeFor(Fly fly, Collection<Integer> othersPivots, PositionBuffer buffer) {
-    if (othersPivots == null)
+  private static void computeFor(Fly fly, Collection<Fly> othersFlies, PositionBuffer buffer) {
+    if (othersFlies == null)
       return;
-    for (Integer otherPivot : othersPivots) {
+    for (Fly otherFly : othersFlies) {
       int pivot = fly.positionPivot;
+      int otherPivot = otherFly.positionPivot;
       if (otherPivot == pivot)
         continue;
       float x = buffer.getX(pivot);
@@ -121,7 +123,7 @@ public class Main implements ApplicationListener {
       float vy = dy / distanceSquared * force;
       fly.move.add(vx, vy);
     }
-    fly.move.scl(.9875f);
+    fly.move.scl(.9975f);
   }
 
   @Override
