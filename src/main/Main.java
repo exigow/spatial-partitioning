@@ -8,12 +8,14 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import main.chunks.Chunk;
 import main.points.Partition;
 import main.points.PartitionRenderer;
 import main.points.PartitionUpdater;
 import main.points.PositionBuffer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,7 +31,7 @@ public class Main implements ApplicationListener {
   private final static int COUNTER_MAX = 15;
   private int counter = COUNTER_MAX;
   private final static int WORLD_BORDER = 16;
-  private final PositionBuffer buffer = new PositionBuffer(2048);
+  private final PositionBuffer buffer = new PositionBuffer(1024);
   private final Collection<Fly> flies = new ArrayList<>();
   private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
@@ -42,16 +44,24 @@ public class Main implements ApplicationListener {
     camera.position.add(WORLD_SIZE / 2, WORLD_SIZE / 2, 0);
     camera.update();
     for (int i = 0; i < buffer.allocationsArray().length; i++) {
-      float x = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
-      float y = WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
+      float x = randomWorldPoint();
+      float y = randomWorldPoint();
       int pointer = buffer.allocate(x, y);
       Fly fly = new Fly(pointer);
       flies.add(fly);
     }
   }
 
+  private static float randomWorldPoint() {
+    return WORLD_BORDER + rnd() * (WORLD_SIZE - WORLD_BORDER * 2);
+  }
+
   private static float rnd() {
     return (float) Math.random();
+  }
+
+  private static Collection<Chunk> quadChunks() {
+    return Arrays.asList(new Chunk(0, 0, 4, 4), new Chunk(4, 0, 8, 4), new Chunk(0, 4, 4, 8), new Chunk(4, 4, 8, 8));
   }
 
   @Override
@@ -60,10 +70,8 @@ public class Main implements ApplicationListener {
       PartitionUpdater.update(partition, flies, buffer);
       counter = 0;
     }
-    executor.execute(new ParallelSimulation(partition, buffer, 0, 0, 4, 4));
-    executor.execute(new ParallelSimulation(partition, buffer, 4, 0, 8, 4));
-    executor.execute(new ParallelSimulation(partition, buffer, 4, 4, 8, 8));
-    executor.execute(new ParallelSimulation(partition, buffer, 0, 4, 4, 8));
+    for (Chunk chunk : quadChunks())
+      executor.execute(new ParallelSimulation(partition, buffer, chunk));
     Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
     Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     renderer.setProjectionMatrix(camera.combined);

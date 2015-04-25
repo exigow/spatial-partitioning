@@ -1,5 +1,6 @@
 package main;
 
+import main.chunks.Chunk;
 import main.points.Partition;
 import main.points.PositionBuffer;
 
@@ -9,24 +10,18 @@ public class ParallelSimulation extends Thread {
 
   private final Partition<Fly> partition;
   private final PositionBuffer buffer;
-  private final int fromX;
-  private final int fromY;
-  private final int toX;
-  private final int toY;
+  private final Chunk chunk;
 
-  public ParallelSimulation(Partition<Fly> partition, PositionBuffer buffer, int fromX, int fromY, int toX, int toY) {
+  public ParallelSimulation(Partition<Fly> partition, PositionBuffer buffer, Chunk chunk) {
     this.partition = partition;
     this.buffer = buffer;
-    this.fromX = fromX;
-    this.fromY = fromY;
-    this.toX = toX;
-    this.toY = toY;
+    this.chunk = chunk;
   }
 
   @Override
   public void run() {
-    for (int x = fromX; x < toX; x++)
-      for (int y = fromY; y < toY; y++)
+    for (int x = chunk.fromX; x < chunk.toX; x++)
+      for (int y = chunk.fromY; y < chunk.toY; y++)
         updateCell(partition, buffer, x, y);
   }
 
