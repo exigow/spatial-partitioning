@@ -16,8 +16,11 @@ import main.points.PositionBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class Main implements ApplicationListener {
 
@@ -30,7 +33,7 @@ public class Main implements ApplicationListener {
   private final static int COUNTER_MAX = 15;
   private int counter = COUNTER_MAX;
   private final static int WORLD_BORDER = 16;
-  private final PositionBuffer buffer = new PositionBuffer(2048);
+  private final PositionBuffer buffer = new PositionBuffer(1024);
   private final Collection<Fly> flies = new ArrayList<>();
   private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
@@ -65,6 +68,16 @@ public class Main implements ApplicationListener {
 
   @Override
   public void render() {
+    update();
+    clearBackground();
+    renderer.setProjectionMatrix(camera.combined);
+    batch.setProjectionMatrix(camera.combined);
+    PartitionRenderer.render(partition, renderer, font, batch);
+    PointsRenderer.render(renderer, buffer);
+    renderFps(batch, font);
+  }
+
+  private void update() {
     if (counter++ >= COUNTER_MAX) {
       PartitionUpdater.update(partition, flies, buffer);
       counter = 0;
@@ -77,13 +90,11 @@ public class Main implements ApplicationListener {
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
+  }
+
+  private static void clearBackground() {
     Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
-    Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
-    renderer.setProjectionMatrix(camera.combined);
-    batch.setProjectionMatrix(camera.combined);
-    PartitionRenderer.render(partition, renderer, font, batch);
-    PointsRenderer.render(renderer, buffer);
-    renderFps(batch, font);
+    Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT);
   }
 
   private static void renderFps(SpriteBatch batch, BitmapFont font) {

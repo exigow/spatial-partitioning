@@ -22,11 +22,11 @@ public class ParallelSimulation implements Callable<Long> {
 
   @Override
   public Long call() throws Exception {
-    long start = System.currentTimeMillis();
+    long start = System.nanoTime();
     for (int x = chunk.fromX; x < chunk.toX; x++)
       for (int y = chunk.fromY; y < chunk.toY; y++)
         updateCell(partition, buffer, x, y);
-    long end = System.currentTimeMillis();
+    long end = System.nanoTime();
     return end - start;
   }
 
