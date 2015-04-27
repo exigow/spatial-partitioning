@@ -5,9 +5,11 @@ import main.points.Partition;
 import main.points.PositionBuffer;
 
 import java.util.Collection;
+import java.util.concurrent.Callable;
 
-public class ParallelSimulation extends Thread {
+public class ParallelSimulation implements Callable<Long> {
 
+  private final static float GRAVITATIONAL_CONST = 6.67384e-11f;
   private final Partition<Fly> partition;
   private final PositionBuffer buffer;
   private final Chunk chunk;
@@ -19,13 +21,14 @@ public class ParallelSimulation extends Thread {
   }
 
   @Override
-  public void run() {
+  public Long call() throws Exception {
+    long start = System.currentTimeMillis();
     for (int x = chunk.fromX; x < chunk.toX; x++)
       for (int y = chunk.fromY; y < chunk.toY; y++)
         updateCell(partition, buffer, x, y);
+    long end = System.currentTimeMillis();
+    return end - start;
   }
-
-  private final static float GRAVITATIONAL_CONST = 6.67384e-11f;
 
   public static void updateCell(Partition<Fly> partition, PositionBuffer buffer, int x, int y) {
     Collection<Fly> files = partition.get(x, y);
@@ -50,15 +53,14 @@ public class ParallelSimulation extends Thread {
   private static void performCage(int pivot, Partition<Fly> partition, PositionBuffer buffer) {
     float x = buffer.getX(pivot);
     float y = buffer.getY(pivot);
-    float max = partition.worldSize - 16f;
-    float min = 16f;
+    float max = partition.worldSize;
     if (x > max)
-      buffer.updateX(pivot, min);
-    if (x < min)
+      buffer.updateX(pivot, 0);
+    if (x < 0)
       buffer.updateX(pivot, max);
     if (y > max)
-      buffer.updateY(pivot, min);
-    if (y < min)
+      buffer.updateY(pivot, 0);
+    if (y < 0)
       buffer.updateY(pivot, max);
   }
 
@@ -77,9 +79,9 @@ public class ParallelSimulation extends Thread {
       float dy = otherY - y;
       float dx = otherX - x;
       float distanceSquared = (float) Math.sqrt(dx * dx + dy * dy);
-      float force =  GRAVITATIONAL_CONST / distanceSquared * 100000000f;
-      float vx = dx / distanceSquared * force;
-      float vy = dy / distanceSquared * force;
+      float force =  GRAVITATIONAL_CONST * 100000000f / distanceSquared;
+      float vx = dx * force / distanceSquared;
+      float vy = dy * force / distanceSquared;
       fly.move.add(vx, vy);
     }
     fly.move.scl(.9975f);

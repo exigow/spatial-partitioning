@@ -2,7 +2,6 @@ package main;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -31,7 +30,7 @@ public class Main implements ApplicationListener {
   private final static int COUNTER_MAX = 15;
   private int counter = COUNTER_MAX;
   private final static int WORLD_BORDER = 16;
-  private final PositionBuffer buffer = new PositionBuffer(1024);
+  private final PositionBuffer buffer = new PositionBuffer(2048);
   private final Collection<Fly> flies = new ArrayList<>();
   private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
@@ -70,8 +69,14 @@ public class Main implements ApplicationListener {
       PartitionUpdater.update(partition, flies, buffer);
       counter = 0;
     }
+    Collection<ParallelSimulation> sims = new ArrayList<>();
     for (Chunk chunk : quadChunks())
-      executor.execute(new ParallelSimulation(partition, buffer, chunk));
+      sims.add(new ParallelSimulation(partition, buffer, chunk));
+    try {
+      executor.invokeAll(sims);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
     Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
     Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
     renderer.setProjectionMatrix(camera.combined);

@@ -1,26 +1,28 @@
 package main.points;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class Partition<T> {
 
   public final int cellCount;
   public final float worldSize;
   private final Collection<T>[][] table;
+  private final int maxArrayIndex;
 
   public Partition(int cellCount, float worldSize) {
     this.cellCount = cellCount;
     this.worldSize = worldSize;
+    maxArrayIndex = cellCount - 1;
     table = initializeTable(cellCount);
   }
 
   @SuppressWarnings("unchecked")
   private Collection<T>[][] initializeTable(int capacity) {
-    Collection<T>[][] table = new ConcurrentLinkedDeque[capacity][capacity];
+    Collection<T>[][] table = new ArrayList[capacity][capacity];
     for (int ix = 0; ix < capacity; ix++)
       for (int iy = 0; iy < capacity; iy++)
-        table[ix][iy] = new ConcurrentLinkedDeque<>();
+        table[ix][iy] = new ArrayList<>();
     return table;
   }
 
@@ -43,7 +45,12 @@ public class Partition<T> {
   }
 
   public int positionFor(float dimension) {
-    return (int) (dimension / (worldSize / cellCount));
+    int result = (int) (dimension / (worldSize / cellCount));
+    if (result > maxArrayIndex)
+      return maxArrayIndex;
+    if (result < 0)
+      return 0;
+    return result;
   }
 
 }
