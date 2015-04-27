@@ -6,21 +6,19 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import main.chunks.Chunk;
 import main.points.Partition;
-import main.points.PartitionRenderer;
 import main.points.PartitionUpdater;
 import main.points.PositionBuffer;
+import main.renderers.PositionsRenderer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 public class Main implements ApplicationListener {
 
@@ -36,9 +34,11 @@ public class Main implements ApplicationListener {
   private final PositionBuffer buffer = new PositionBuffer(1024);
   private final Collection<Fly> flies = new ArrayList<>();
   private final ExecutorService executor = Executors.newFixedThreadPool(4);
+  private PositionsRenderer positionsRenderer;
 
   @Override
   public void create() {
+    positionsRenderer = new PositionsRenderer(buffer, loadPointsShader());
     renderer = new ShapeRenderer();
     batch = new SpriteBatch();
     font = new BitmapFont(Gdx.files.internal("data/hehe.fnt"));
@@ -72,9 +72,15 @@ public class Main implements ApplicationListener {
     clearBackground();
     renderer.setProjectionMatrix(camera.combined);
     batch.setProjectionMatrix(camera.combined);
-    PartitionRenderer.render(partition, renderer, font, batch);
-    PointsRenderer.render(renderer, buffer);
+    //PartitionRenderer.render(partition, renderer, font, batch);
+    positionsRenderer.render(camera.combined);
     renderFps(batch, font);
+  }
+
+  private static ShaderProgram loadPointsShader() {
+    String vertexShader = Gdx.files.internal("data/points.vert").readString();
+    String fragmentShader = Gdx.files.internal("data/points.frag").readString();
+    return new ShaderProgram(vertexShader, fragmentShader);
   }
 
   private void update() {
@@ -93,8 +99,8 @@ public class Main implements ApplicationListener {
   }
 
   private static void clearBackground() {
-    Gdx.graphics.getGL20().glClearColor(.125f, .125f, .125f, 1f);
-    Gdx.graphics.getGL20().glClear(GL20.GL_COLOR_BUFFER_BIT);
+    Gdx.gl20.glClearColor(.125f, .125f, .125f, 1f);
+    Gdx.gl20.glClear(GL20.GL_COLOR_BUFFER_BIT);
   }
 
   private static void renderFps(SpriteBatch batch, BitmapFont font) {
