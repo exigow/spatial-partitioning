@@ -1,6 +1,8 @@
 package main.points;
 
-import java.util.ArrayList;
+import main.chunks.Chunk;
+
+import java.util.ArrayDeque;
 import java.util.Collection;
 
 public class Partition<T> {
@@ -19,17 +21,21 @@ public class Partition<T> {
 
   @SuppressWarnings("unchecked")
   private Collection<T>[][] initializeTable(int capacity) {
-    Collection<T>[][] table = new ArrayList[capacity][capacity];
+    Collection<T>[][] table = new ArrayDeque[capacity][capacity];
     for (int ix = 0; ix < capacity; ix++)
       for (int iy = 0; iy < capacity; iy++)
-        table[ix][iy] = new ArrayList<>();
+        table[ix][iy] = new ArrayDeque<>();
     return table;
+  }
+
+  public void put(T ref, int x, int y) {
+    table[x][y].add(ref);
   }
 
   public void put(T ref, float x, float y) {
     int cellX = positionFor(x);
     int cellY = positionFor(y);
-    table[cellX][cellY].add(ref);
+    put(ref, cellX, cellY);
   }
 
   public Collection<T> get(int x, int y) {
@@ -51,6 +57,10 @@ public class Partition<T> {
     if (result < 0)
       return 0;
     return result;
+  }
+
+  public Chunk asWorldWideChunk() {
+    return new Chunk(0, 0, cellCount, cellCount);
   }
 
 }

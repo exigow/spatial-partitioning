@@ -84,7 +84,7 @@ public class ParallelSimulation implements Callable<Long> {
       float vy = dy * force / distanceSquared;
       fly.move.add(vx, vy);
     }
-    fly.move.scl(.9975f);
+    fly.move.scl(.99875f);
   }
 
 }

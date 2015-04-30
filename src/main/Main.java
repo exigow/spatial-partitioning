@@ -8,22 +8,23 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import main.chunks.Chunk;
 import main.points.Partition;
 import main.points.PartitionUpdater;
 import main.points.PositionBuffer;
+import main.renderers.PartitionRenderer;
 import main.renderers.PositionsRenderer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main implements ApplicationListener {
 
+  private final static int CHUNKS = 8;
   private final static float WORLD_SIZE = 512;
-  private final Partition<Fly> partition = new Partition<>(8, WORLD_SIZE);
+  private final Partition<Fly> partition = new Partition<>(CHUNKS, WORLD_SIZE);
   private ShapeRenderer renderer;
   private OrthographicCamera camera;
   private BitmapFont font;
@@ -33,7 +34,7 @@ public class Main implements ApplicationListener {
   private final static int WORLD_BORDER = 16;
   private final PositionBuffer buffer = new PositionBuffer(1024);
   private final Collection<Fly> flies = new ArrayList<>();
-  private final ExecutorService executor = Executors.newFixedThreadPool(4);
+  private final ExecutorService executor = Executors.newFixedThreadPool(1);
   private PositionsRenderer positionsRenderer;
 
   @Override
@@ -41,7 +42,7 @@ public class Main implements ApplicationListener {
     positionsRenderer = new PositionsRenderer(buffer, loadPointsShader());
     renderer = new ShapeRenderer();
     batch = new SpriteBatch();
-    font = new BitmapFont(Gdx.files.internal("data/hehe.fnt"));
+    font = new BitmapFont(Gdx.files.internal("data/comfortaa.fnt"));
     camera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     camera.position.add(WORLD_SIZE / 2, WORLD_SIZE / 2, 0);
     camera.update();
@@ -62,17 +63,13 @@ public class Main implements ApplicationListener {
     return (float) Math.random();
   }
 
-  private static Collection<Chunk> quadChunks() {
-    return Arrays.asList(new Chunk(0, 0, 4, 4), new Chunk(4, 0, 8, 4), new Chunk(0, 4, 4, 8), new Chunk(4, 4, 8, 8));
-  }
-
   @Override
   public void render() {
     update();
     clearBackground();
     renderer.setProjectionMatrix(camera.combined);
     batch.setProjectionMatrix(camera.combined);
-    //PartitionRenderer.render(partition, renderer, font, batch);
+    PartitionRenderer.render(partition, renderer, font, batch);
     positionsRenderer.render(camera.combined);
     renderFps(batch, font);
   }
@@ -88,11 +85,9 @@ public class Main implements ApplicationListener {
       PartitionUpdater.update(partition, flies, buffer);
       counter = 0;
     }
-    Collection<ParallelSimulation> sims = new ArrayList<>();
-    for (Chunk chunk : quadChunks())
-      sims.add(new ParallelSimulation(partition, buffer, chunk));
+    Collection<ParallelSimulation> simulations = Collections.singleton(new ParallelSimulation(partition, buffer, partition.asWorldWideChunk()));
     try {
-      executor.invokeAll(sims);
+      executor.invokeAll(simulations);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
